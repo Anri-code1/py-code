@@ -1,7 +1,7 @@
 import os
 import struct
 
-def creat(archive, folder):
+def create(archive, folder):
 	files = []
 	for f in os.listdir(folder):          #переюираем всё что есть в папке
 		full_path = os.path.join(folder, f)     #берём полный путь
@@ -26,4 +26,24 @@ def creat(archive, folder):
 
 
 
-creat("test.arc", "/data/data/com.termux/files/home/test_folder")
+def unpack(archive, folder):
+	with open(archive, "rb") as arc:
+		count = struct.unpack("I", arc.read(4))[0] #читаем количество файлов
+		for i in range(count):
+			name_len = struct.unpack("I", arc.read(4))[0] #длина имени
+			name = arc.read(name_len).decode("utf-8")  #само имя
+			filesize = struct.unpack("Q", arc.read(8))[0] #размер файла (Q так как размер может быть больше 4 гб тогда I не подойдёт) 
+			content = arc.read(filesize)  #содержимое файла
+			out_path = os.path.join(folder, name) #путь
+			with open(out_path, "wb") as out:    # создаём файл на диске
+				out.write(content)
+
+	print(f"Архив {archive} распакован. Файлов: {count}")
+
+
+
+
+
+create("test.arc", "/data/data/com.termux/files/home/test_folder")
+
+unpack("test.arc", "/data/data/com.termux/files/home/test_unpacked")
