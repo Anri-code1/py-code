@@ -43,7 +43,44 @@ def unpack(archive, folder):
 
 
 
+def add(archive, filepath):
+	files = []			#сщздаём список для пар (имя, содержимое)
+	with open(archive, "rb") as arc:
+		count = struct.unpack("I", arc.read(4))[0]
+		for i in range(count):
+			name_len = struct.unpack("I", arc.read(4))[0]
+			name = arc.read(name_len).decode("utf-8")
+			filesize = struct.unpack("Q", arc.read(8))[0]
+			content = arc.read(filesize)
+			files.append((name, content)) #складываем файл в список
+
+	new_name = os.path.basename(filepath)    #получаем имя файла из пути
+	with open(filepath, "rb") as f:
+		new_content = f.read()
+	files.append((new_name, new_content))
+	
+	with open(archive, "wb") as arc:
+		arc.write(struct.pack("I", len(files)))
+		for name, content in files:
+			name_b = name.encode("utf-8")
+			arc.write(struct.pack("I", len(name_b)))
+			arc.write(name_b)
+			arc.write(struct.pack("Q", len(content)))
+			arc.write(content)
+
+
+
+	print(f"Файл {filepath} добавлен в архив {archive}. Всего файлов: {len(files)}")
+
+
+
+
+
 
 create("test.arc", "/data/data/com.termux/files/home/test_folder")
-
+#add("test.arc", "/data/data/com.termux/files/home/newfile.txt")
 unpack("test.arc", "/data/data/com.termux/files/home/test_unpacked")
+
+add("test.arc", "/data/data/com.termux/files/home/newfile.txt")
+
+unpack("test.arc", "/data/data/com.termux/files/home/test_unpacked2")
