@@ -75,12 +75,55 @@ def add(archive, filepath):
 
 
 
+def rm(archive, filepath):
+    # Стадия А: читаем существующий архив в память
+    files = []
+    
+    with open(archive, "rb") as arc:
+        count = struct.unpack("I", arc.read(4))[0]
+        
+        for i in range(count):
+            name_len = struct.unpack("I", arc.read(4))[0]
+            name = arc.read(name_len).decode("utf-8")
+            filesize = struct.unpack("Q", arc.read(8))[0]
+            content = arc.read(filesize)
+            files.append((name, content))
+    
+    # Стадия Б: убираем нужный файл из списка
+    target_name = os.path.basename(filepath)                   # 1
+    new_files = []                                             # 2
+    for name, content in files:                                # 3
+        if name != target_name:                                # 4
+            new_files.append((name, content))                  # 5
+    
+    if len(new_files) == len(files):                           # 6
+        print(f"Файл {target_name} не найден в архиве {archive}")
+        return                                                 # 7
+    
+    # Стадия В: перезаписываем архив с нуля
+    with open(archive, "wb") as arc:
+        arc.write(struct.pack("I", len(new_files)))            # 8
+        
+        for name, content in new_files:                        # 9
+            name_b = name.encode("utf-8")
+            arc.write(struct.pack("I", len(name_b)))
+            arc.write(name_b)
+            arc.write(struct.pack("Q", len(content)))
+            arc.write(content)
+    
+    print(f"Файл {target_name} удалён из архива {archive}. Осталось файлов: {len(new_files)}")
 
 
-create("test.arc", "/data/data/com.termux/files/home/test_folder")
+
+#create("test.arc", "/data/data/com.termux/files/home/test_folder")
 #add("test.arc", "/data/data/com.termux/files/home/newfile.txt")
-unpack("test.arc", "/data/data/com.termux/files/home/test_unpacked")
+#unpack("test.arc", "/data/data/com.termux/files/home/test_unpacked")
 
-add("test.arc", "/data/data/com.termux/files/home/newfile.txt")
+#add("test.arc", "/data/data/com.termux/files/home/newfile.txt")
 
-unpack("test.arc", "/data/data/com.termux/files/home/test_unpacked2")
+#unpack("test.arc", "/data/data/com.termux/files/home/test_unpacked2")
+rm("test.arc", "/data/data/com.termux/files/home/newfile.txt")
+
+rm("test.arc", "/data/data/com.termux/files/home/nonexistent.txt")
+
+unpack("test.arc", "/data/data/com.termux/files/home/test_unpacked3")
